@@ -103,6 +103,7 @@ int main(int argc, char **argv) {
 	for (int i = 1; i <= SIZE; i++) {
 		for (int j = 1; j <= SIZE; j++) {
 			if (drand48() < 0.10) {
+				// Modification required to incorporate Male, Female & Zombie differentiation
 				MeshA[i][j] = true;
 			}
 		}
@@ -117,6 +118,7 @@ int main(int argc, char **argv) {
 		for (int i = 1; i <= SIZE; i++) {
 			lock(i, locks);
 			for (int j = 1; j <= SIZE; j++) if (MeshA[i][j] == true) { 
+				// Modification required to differentiate movement of human & zombie
 				MeshA[i][j] = false;
 				double move = drand48();
 				if (move < 1.0*MOVE && MeshB[i-1][j] == false && MeshA[i-1][j] == false) {
