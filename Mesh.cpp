@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <omp.h>
+#include "Occupant.cpp"
 using namespace std;
 
 #define STEPS	100
@@ -27,11 +28,14 @@ void unlock(int i, bool *locks) {
 }
 #endif
 
-bool **CreateMesh(int I, int J) {
-	bool **Mesh = new bool *[I];
+Occupant **CreateMesh(int I, int J) {
+	Occupant **Mesh = new Occupant *[I];
 	for (int i = 0; i < I; i++) {
-		Mesh[i] = new bool[J];
-		for (int j = 0; j < J; j++) Mesh[i][j] = false;
+		Mesh[i] = new Occupant[J];
+		for (int j = 0; j < J; j++) {
+		  	
+			//Mesh[i][j] = NULL;	
+		}
 	}
 	return(Mesh);
 }
@@ -81,36 +85,47 @@ bool **checkBoundary(bool **Mesh) {
 	return(Mesh);
 }
 
-void print(bool **Mesh, int t) {
-	int populationTotal = 0;
+
+void print(Occupant **Mesh, int t) {
+	int humanPop = 0;
+	int zombiePop = 0;
          for (int i = 1; i <= SIZE; i++) {
                         for (int j = 1; j <= SIZE; j++) {
-				if (Mesh[i][j] == true) {
-					populationTotal++;	
+				if (Mesh[i][j].probabilityOfMovement == 0.1 ) {
+					humanPop++;	
+				}
+				else if (Mesh[i][j].probabilityOfMovement == 0.075 ){
+					zombiePop++;
 				}
 			}
 	}
-	cout<<t<<"\t"<<populationTotal<<std::endl;
+	cout<<t<<"\t"<<humanPop<<"\t"<<zombiePop<<std::endl;
 }
 
 int main(int argc, char **argv) {
 	srand48(8767134);
 	bool *locks = new bool[SIZE + 2];
 	for (int i = 0; i < SIZE + 2; i++) locks[i] = false;
-	bool **MeshA = CreateMesh(SIZE + 2, SIZE + 2);
-	bool **MeshB = CreateMesh (SIZE + 2, SIZE + 2);
+	Occupant **MeshA = CreateMesh(SIZE + 2, SIZE + 2);
+	Occupant **MeshB = CreateMesh (SIZE + 2, SIZE + 2);
 
 	for (int i = 1; i <= SIZE; i++) {
 		for (int j = 1; j <= SIZE; j++) {
-			if (drand48() < 0.10) {
+			if (drand48() < 0.01) {
 				// Modification required to incorporate Male, Female & Zombie differentiation
-				MeshA[i][j] = true;
+				Zombie z;
+				MeshA[i][j] = z;
+			}
+			else if(drand48()<0.10){
+				Human h;
+				MeshA[i][j] = h;
 			}
 		}
 	}
 
-        std::cout<<"Time"<<"\t"<<"population"<<std::endl;	
+        std::cout<<"Time"<<"\t"<<"humanPop"<<"\t"<<"zombiePop"<<std::endl;	
 	print(MeshA, 0);
+
 	for (int n = 0; n < STEPS; n++) {
 		#if defined(_OPENMP)
 		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
@@ -121,15 +136,20 @@ int main(int argc, char **argv) {
 				// Modification required to differentiate movement of human & zombie
 				MeshA[i][j] = false;
 				double move = drand48();
-				if (move < 1.0*MOVE && MeshB[i-1][j] == false && MeshA[i-1][j] == false) {
+				if (move < 1.0*MOVE && MeshB[i-1][j].probabilityOfMovemnt == 0.0 && MeshA[i-1][j].probabilityMovement == 0.0) {
+					//Must be examined
 					MeshB[i-1][j] = true;
-				} else if (move < 2.0*MOVE && MeshB[i+1][j] == false && MeshA[i+1][j] == false) {
+				} else if (move < 2.0*MOVE && MeshB[i+1][j].probabilityOfMovement == 0.0 && MeshA[i+1][j].probabilityOfMovement == 0.0) {
+					//Must be examined
 					MeshB[i+1][j] = true;
-				} else if (move < 3.0*MOVE && MeshB[i][j-1] == false && MeshA[i][j-1] == false) {
+				} else if (move < 3.0*MOVE && MeshB[i][j-1].pbilityOfMovement == 0.0 && MeshA[i][j-1].probabilityOfMovement == 0.0) {
+					//Must be examined
 					MeshB[i][j-1] = true;
-				} else if (move < 4.0*MOVE && MeshB[i][j+1] == false && MeshA[i][j+1] == false) {
+				} else if (move < 4.0*MOVE && MeshB[i][j+1].probabilityOfMovement == 0.0 && MeshA[i][j+1].probabilityOfMovement == 0.0) {
+					//Must be examined
 					MeshB[i][j+1] = true;
 				} else {
+					//Must be examined
 					MeshB[i][j] = true;
 				}
 			} 
@@ -138,9 +158,9 @@ int main(int argc, char **argv) {
 
 		MeshB = checkBoundary(MeshB);		
 		swap(MeshA, MeshB);
-		print(MeshA, n+1);		
-/*
-		for(int p = 0; p <= SIZE; p++) {
+		print(MeshA, n+1);	
+
+/*		for(int p = 0; p <= SIZE; p++) {
 			for(int q = 0; q <= SIZE; q++) {
 				if(MeshA[p][q] == true) {
 					cout<<"X | ";
@@ -150,7 +170,7 @@ int main(int argc, char **argv) {
 			}
 			cout<<"\n";
 		}
-		cout<<"\n\n\n\n\n\n\n\n\n";*/
-	}
+		cout<<"\n\n\n\n\n\n\n\n\n";
+	}*/
 }
 
