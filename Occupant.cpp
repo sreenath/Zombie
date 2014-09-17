@@ -6,13 +6,6 @@ class Occupant{
    
 	public:
 		double probabilityOfMovement;
-<<<<<<< HEAD
-=======
-
-		Occupant() {
-			probabilityOfMovement = 0.0;	
-		}
->>>>>>> FETCH_HEAD
 
 		Occupant() {
 			probabilityOfMovement = 0.0;	
