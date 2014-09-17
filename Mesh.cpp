@@ -1,7 +1,10 @@
 #include <iostream>
 #include <stdlib.h>
 #include <omp.h>
+<<<<<<< HEAD
 #include <unistd.h>
+=======
+>>>>>>> FETCH_HEAD
 #include "Occupant.cpp"
 using namespace std;
 
@@ -93,7 +96,12 @@ Occupant **checkBoundary(Occupant **Mesh) {
 	}
 	return(Mesh);
 }
+<<<<<<< HEAD
 		
+=======
+
+
+>>>>>>> FETCH_HEAD
 void print(Occupant **Mesh, int t) {
 	int humanPop = 0;
 	int zombiePop = 0;
@@ -119,7 +127,10 @@ int main(int argc, char **argv) {
 
 	for (int i = 1; i <= SIZE; i++) {
 		for (int j = 1; j <= SIZE; j++) {
+<<<<<<< HEAD
 			//#zombies should be reduced
+=======
+>>>>>>> FETCH_HEAD
 			if (drand48() < 0.01) {
 				// Modification required to incorporate Male, Female & Zombie differentiation
 				Zombie z;
@@ -142,6 +153,7 @@ int main(int argc, char **argv) {
 	
 		for (int i = 1; i <= SIZE; i++) {
 			lock(i, locks);
+<<<<<<< HEAD
 			for (int j = 1; j <= SIZE; j++) {
 				if (!isEmpty(MeshA[i][j])) { 
 					double move = drand48();
@@ -159,6 +171,27 @@ int main(int argc, char **argv) {
 				
 					Occupant temp;
 					MeshA[i][j] = temp;	
+=======
+			for (int j = 1; j <= SIZE; j++) if (MeshA[i][j] == true) { 
+				// Modification required to differentiate movement of human & zombie
+				MeshA[i][j] = false;
+				double move = drand48();
+				if (move < 1.0*MOVE && MeshB[i-1][j].probabilityOfMovemnt == 0.0 && MeshA[i-1][j].probabilityMovement == 0.0) {
+					//Must be examined
+					MeshB[i-1][j] = true;
+				} else if (move < 2.0*MOVE && MeshB[i+1][j].probabilityOfMovement == 0.0 && MeshA[i+1][j].probabilityOfMovement == 0.0) {
+					//Must be examined
+					MeshB[i+1][j] = true;
+				} else if (move < 3.0*MOVE && MeshB[i][j-1].pbilityOfMovement == 0.0 && MeshA[i][j-1].probabilityOfMovement == 0.0) {
+					//Must be examined
+					MeshB[i][j-1] = true;
+				} else if (move < 4.0*MOVE && MeshB[i][j+1].probabilityOfMovement == 0.0 && MeshA[i][j+1].probabilityOfMovement == 0.0) {
+					//Must be examined
+					MeshB[i][j+1] = true;
+				} else {
+					//Must be examined
+					MeshB[i][j] = true;
+>>>>>>> FETCH_HEAD
 				}
 		} 
 			unlock(i, locks);
@@ -168,9 +201,13 @@ int main(int argc, char **argv) {
 		swap(MeshA, MeshB);
 		print(MeshA, n+1);	
 
+<<<<<<< HEAD
 /*
 		cout<< "\n\nMesh A \n";
 		for(int p = 0; p <= SIZE; p++) {
+=======
+/*		for(int p = 0; p <= SIZE; p++) {
+>>>>>>> FETCH_HEAD
 			for(int q = 0; q <= SIZE; q++) {
 				if(MeshA[p][q].probabilityOfMovement == 0.1 ) {
 					cout<<"H | ";
@@ -183,7 +220,11 @@ int main(int argc, char **argv) {
 			cout<<"\n";
 		}
 		cout<<"\n\n\n\n\n\n\n\n\n";
+<<<<<<< HEAD
 */
 	}
+=======
+	}*/
+>>>>>>> FETCH_HEAD
 }
 
