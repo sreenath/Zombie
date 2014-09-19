@@ -7,30 +7,47 @@ using namespace std;
 
 #define STEPS	100
 #define SIZE 	100
+#define DEATH 0
 
 bool isEmpty(Occupant o) {
-	if (o.probabilityOfMovement == 0.0) {
+	if (o.type == 'O') {
 		return true;
 		} 
 		return false;
 }
 
+bool isHuman(Occupant o) {
+	if (o.type == 'H') {
+		return true;
+		} 
+		return false;
+}
+
+
 #if defined(_OPENMP)
-void lock(int i, bool *locks) {
+void lock(int i, bool *locks, int lockRows) {
 	for (bool locked = false; locked == false; /*NOP*/) {
 		#pragma omp critical (LockRegion)
 		{
-			locked = !locks[i-1] && !locks[i] && !locks[i+1];
+			bool temp = true;
+			for(int j = 0; j <= lockRows; j++) {
+				locked = temp && !locks[i - j] && !locks[i + j];
+				temp = locked;
+			}
 			if (locked) {
-				locks[i-1] = true; locks[i] = true; locks[i+1] = true;
+				for(int j = 0; j <= lockRows; j++) {
+					locks[i-j] = true;
+				}
 			}
 		}
 	}
 }
-void unlock(int i, bool *locks) {
+void unlock(int i, bool *locks, int lockRows) {
 	#pragma omp critical (LockRegion)
 	{
-		locks[i-1] = false; locks[i] = false; locks[i+1] = false;
+		for(int j = 0; j <= lockRows; j++) {
+			locks[i - j] = false;
+		} 
 	}
 }
 #endif
@@ -58,8 +75,6 @@ Occupant **checkBoundary(Occupant **Mesh) {
 		if(!isEmpty(Mesh[i][0])) {
 			if (isEmpty(Mesh[i][1])) {
 				Mesh[i][1] = Mesh[i][0];
-			} else {
-				Mesh[i][SIZE] = Mesh[i][0];
 			}
 			Mesh[i][0] = temp;
 		}
@@ -67,27 +82,21 @@ Occupant **checkBoundary(Occupant **Mesh) {
 		if(!isEmpty(Mesh[i][SIZE + 1])) {
 			if (isEmpty(Mesh[i][SIZE])) {
 				Mesh[i][SIZE] = Mesh[i][SIZE + 1];
-			} else {
-				Mesh[i][1] = Mesh[i][SIZE + 1];
-			}
+			} 
 			Mesh[i][SIZE + 1] = temp;
 		}
 		
 		if(!isEmpty(Mesh[0][i])) {
-			if (isEmpty(Mesh[1][i])) {
-				Mesh[1][i] = Mesh[0][i];
-			} else {
+			if (isEmpty(Mesh[SIZE][i])) {
 				Mesh[SIZE][i] = Mesh[0][i];
-			}
+			} 
 			Mesh[0][i] = temp;
 		}
 
 		if(!isEmpty(Mesh[SIZE + 1][i])) {
-			if (isEmpty(Mesh[SIZE][i])) {
-				Mesh[SIZE][i] = Mesh[SIZE + 1][i];
-			} else {
+			if (isEmpty(Mesh[1][i])) {
 				Mesh[1][i] = Mesh[SIZE + 1][i];
-			}
+			} 
 			Mesh[SIZE + 1][i] = temp;
 		} 
 	}
@@ -141,7 +150,7 @@ int main(int argc, char **argv) {
 		#endif
 	
 		for (int i = 1; i <= SIZE; i++) {
-			lock(i, locks);
+			lock(i, locks, 1);
 			for (int j = 1; j <= SIZE; j++) {
 				if (!isEmpty(MeshA[i][j])) { 
 					double move = drand48();
@@ -161,13 +170,32 @@ int main(int argc, char **argv) {
 					MeshA[i][j] = temp;	
 				}
 		} 
-			unlock(i, locks);
+			unlock(i, locks, 1);
 		}
 
 		MeshB = checkBoundary(MeshB);		
 		swap(MeshA, MeshB);
 		print(MeshA, n+1);	
 
+/*
+		//Birth
+		for (int i = 1; i <= SIZE; i++) {
+			lock(i, locks, 2);
+			for (int j = 1; j <= SIZE; j++) {
+				
+*/
+		// Death 
+		for (int i = 1; i <= SIZE; i++) {
+			for (int j = 1; j <= SIZE; j++) {
+				double die = drand48();
+				if (isHuman(MeshA[i][j]) && die < 1.0*DEATH) {
+					Occupant temp;
+					MeshA[i][j] = temp;
+				}
+			}
+		}
+
+		print(MeshA, n+1);
 /*
 		cout<< "\n\nMesh A \n";
 		for(int p = 0; p <= SIZE; p++) {
