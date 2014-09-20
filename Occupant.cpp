@@ -8,20 +8,29 @@ class Occupant{
 		double probabilityOfMovement;
 		char type;
 		int age;
+		char gender;
 
 		Occupant() {
 			probabilityOfMovement = 0.0;	
 			type = 'O';
 			age = 0;
+			gender = ' ';
 		}
 };
 
 class Human: public Occupant{
 	public :
+		char gender;
 		Human(){
 			probabilityOfMovement = 0.1;
 			type = 'H';
-			 age = 0;
+			age = 0;
+		}
+		Human(char c) {
+			probabilityOfMovement = 0.1;
+			type = 'H';
+			age = 0;
+			gender = c;
 		}
 };
 

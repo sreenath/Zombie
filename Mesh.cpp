@@ -33,7 +33,12 @@ bool isZombie(Occupant o) {
                 return false;
 }
 
-
+bool isOppositeGender(Occupant h, char gender) {
+	if(h.gender == gender) {
+		return false;
+	}
+	return true;
+}
 int getHumanPop(Occupant **Mesh){
 
 	int humanPop = 0;
@@ -63,87 +68,82 @@ int getZombiePop(Occupant **Mesh){
 	return zombiePop;
 }
 
-
-void birthOpr(Occupant){
-
-}
-
-
 double getBirthRate(Occupant ** Mesh){
         double delta = getHumanPop(Mesh)/(SIZE*SIZE - getZombiePop(Mesh));
         double birthRate = BIRTHPC/(1-pow(1-delta,4))*4;
         return birthRate;
 }
 
-Occupant ** placeBaby(int i1,int j1,int i2, int j2,Occupant ** Mesh){
-
-	Human baby;
+void placeBaby(int i1,int j1,int i2, int j2,Occupant ** Mesh, Occupant ** MeshB){
+	double g = drand48();
+	char gender;
+	if (g < 1.0*0.5) {
+		gender = 'M';
+	} else {
+		gender = 'F';
+	}
+	Human baby(gender);
 
 	if (i1 == i2){
-		if (isEmpty(Mesh[i1-1][j1])){
+		if (isEmpty(MeshB[i1-1][j1]) && isEmpty(Mesh[i1-1][j1])){
 			
-			Mesh[i1-1][j1] = baby;
+			MeshB[i1-1][j1] = baby;
 		}
-		else if (isEmpty(Mesh[i1-1][j2])){
+		else if (isEmpty(MeshB[i1-1][j2]) && isEmpty(Mesh[i1-1][j2])){
 			
-			Mesh[i1-1][j2] = baby;
+			MeshB[i1-1][j2] = baby;
 		}
-		else if (isEmpty(Mesh[i1+1][j1])){
+		else if (isEmpty(MeshB[i1+1][j1]) && isEmpty(Mesh[i1+1][j1])){
 			
-			Mesh[i1+1][j1] = baby;
+			MeshB[i1+1][j1] = baby;
 		}
-		else if (isEmpty(Mesh[i1+1][j2])){
+		else if (isEmpty(MeshB[i1+1][j2]) && isEmpty(Mesh[i1+1][j2])){
 			
-			Mesh[i1+1][j2] = baby;
+			MeshB[i1+1][j2] = baby;
 			
+		}
+		else if (isEmpty(MeshB[i1][min(j1,j2)-1]) && isEmpty(Mesh[i1][min(j1,j2)-1])){
+			
+			MeshB[i1][min(j1,j2)-1] = baby;
 		}
 
-		else if (isEmpty(Mesh[i1][min(j1,j2)-1])){
+		else if (isEmpty(MeshB[i1][max(j1,j2)+1]) && isEmpty(Mesh[i1][max(j1,j2)+1])){
 			
-			Mesh[i1][min(j1,j2)-1] = baby;
-		}
-
-		else if (isEmpty(Mesh[i1][max(j1,j2)+1])){
-			
-			Mesh[i1][max(j1,j2)+1]= baby;
+			MeshB[i1][max(j1,j2)+1]= baby;
 		}
 
 	}
 	else if (j1==j2){
-		if (isEmpty(Mesh[i1][j1-1])){
-			Mesh[i1][j1-1] = baby;
+		if (isEmpty(MeshB[i1][j1-1]) && isEmpty(Mesh[i1][j1-1])){
+			MeshB[i1][j1-1] = baby;
 		}
 
-		else if (isEmpty(Mesh[i2][j1-1])){
+		else if (isEmpty(MeshB[i2][j1-1]) && isEmpty(Mesh[i2][j1-1])){
 			
-			Mesh[i2][j1-1] = baby;
+			MeshB[i2][j1-1] = baby;
 		}
 
 
 
-		else if (isEmpty(Mesh[i1][j1+1])){
+		else if (isEmpty(MeshB[i1][j1+1]) && isEmpty(Mesh[i1][j1+1])){
 			
-			Mesh[i1][j1+1] = baby;
+			MeshB[i1][j1+1] = baby;
 		}
 
-		else if (isEmpty(Mesh[i2][j1+1])){
+		else if (isEmpty(MeshB[i2][j1+1]) && isEmpty(Mesh[i2][j1+1])){
 			
-			Mesh[i2][j1+1] = baby;
+			MeshB[i2][j1+1] = baby;
 		}
 
-		else if (isEmpty(Mesh[min(i1,i2)-1][j1])){
+		else if (isEmpty(MeshB[min(i1,i2)-1][j1]) && isEmpty(Mesh[min(i1,i2)-1][j1])){
 			
-			Mesh[min(i1,i2)-1][j1]= baby;
+			MeshB[min(i1,i2)-1][j1]= baby;
 		}
 
-		else if (isEmpty(Mesh[max(i1,i2)+1][j1])){
-			
-			Mesh[max(i1,i2)+1][j1]= baby;
+		else if (isEmpty(MeshB[max(i1,i2)+1][j1]) && isEmpty(Mesh[max(i1,i2)+1][j1])){
+			MeshB[max(i1,i2)+1][j1]= baby;
 		}
-
 	}
-
-	return Mesh;
 }
 
 
@@ -258,8 +258,13 @@ int main(int argc, char **argv) {
 				Zombie z;
 				MeshA[i][j] = z;
 			}
-			else if(drand48()<0.10){
-				Human h;
+			else if(drand48()<0.05){
+				char gender = 'M';
+				Human h(gender);
+				MeshA[i][j] = h;
+			} else if (drand48()<0.10) {
+				char gender = 'F';
+				Human h(gender);
 				MeshA[i][j] = h;
 			}
 		}
@@ -268,9 +273,10 @@ int main(int argc, char **argv) {
         std::cout<<"Time"<<"\t"<<"humanPop"<<"\t"<<"zombiePop"<<std::endl;	
 	print(MeshA, 0);
 
+		
 	for (int n = 0; n < STEPS; n++) {
 		#if defined(_OPENMP)
-		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n, cout)
+		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
 		#endif
 	
 		for (int i = 1; i <= SIZE; i++) {
@@ -301,27 +307,45 @@ int main(int argc, char **argv) {
 		MeshB = checkBoundary(MeshB);		
 		swap(MeshA, MeshB);
 		print(MeshA, n+1);	
-
-
+/*
+cout<< "\n\nAFTER Moving  - Mesh A \n";
+		for(int p = 1; p <= SIZE; p++) {
+			for(int q = 1; q <= SIZE; q++) {
+				if(isHuman(MeshA[p][q])) {
+					cout<<MeshA[p][q].age<<" H | ";
+				} else if (isZombie(MeshA[p][q])) {
+					cout<<MeshA[p][q].age<<" Z | ";
+				}else{
+					cout<<"    | ";
+				}
+			}
+			cout<<"\n";
+		}
+		cout<<"\n\n\n\n\n\n\n\n\n";
+*/
 		//Birth
+
+		#if defined(_OPENMP)
+		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
+		#endif
 		for (int i = 1; i <= SIZE; i++) {
 			lock(i, locks, 2);
 			for (int j = 1; j <= SIZE; j++) {
 				if (isHuman(MeshA[i][j])){
-					if (isHuman(MeshA[i][j-1])){
+					if (isHuman(MeshA[i][j-1]) && isOppositeGender(MeshA[i][j-1], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
-							placeBaby(i,j,i,j-1,MeshA);
+							placeBaby(i,j,i,j-1,MeshA, MeshB);
 							MeshB[i][j]= MeshA[i][j];
 							Occupant temp;
 							MeshA[i][j] = temp;	
 							continue;
 						}						
 					}
-					else if (isHuman(MeshA[i][j+1])){
+					else if (isHuman(MeshA[i][j+1]) && isOppositeGender(MeshA[i][j+1], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
-							placeBaby(i,j,i,j+1,MeshA);
+							placeBaby(i,j,i,j+1,MeshA, MeshB);
 							MeshB[i][j]= MeshA[i][j];
 							Occupant temp;
 							MeshA[i][j] = temp;	
@@ -329,10 +353,10 @@ int main(int argc, char **argv) {
 						}			
 					}
 
-					else if (isHuman(MeshA[i-1][j])){
+					else if (isHuman(MeshA[i-1][j]) && isOppositeGender(MeshA[i - 1][j], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
-							placeBaby(i,j,i-1,j,MeshA);
+							placeBaby(i,j,i-1,j,MeshA, MeshB);
 							MeshB[i][j]= MeshA[i][j];
 							Occupant temp;
 							MeshA[i][j] = temp;	
@@ -340,24 +364,30 @@ int main(int argc, char **argv) {
 						}			
 					}
 
-					else if (isHuman(MeshA[i+1][j])){
+					else if (isHuman(MeshA[i+1][j]) && isOppositeGender(MeshA[i + 1][j], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
-							placeBaby(i,j,i+1,j,MeshA);
+							placeBaby(i,j,i+1,j,MeshA, MeshB);
 							MeshB[i][j]= MeshA[i][j];
 							Occupant temp;
 							MeshA[i][j] = temp;	
 							continue;
 						}			
+					} else {
+						MeshB[i][j]= MeshA[i][j];
+						Occupant temp;
+						MeshA[i][j] = temp;	
 					}
-
-
-
-				}		
+				}	else if (isZombie(MeshA[i][j]))	{
+						MeshB[i][j]= MeshA[i][j];
+						Occupant temp;
+						MeshA[i][j] = temp;
+				}
 			}
 			unlock(i, locks, 2);
 		}		
-
+		MeshB = checkBoundary(MeshB);		
+		swap(MeshA, MeshB);
 
 		// Death 
 		for (int i = 1; i <= SIZE; i++) {
@@ -372,14 +402,14 @@ int main(int argc, char **argv) {
 
 
 		cout<< "\n\nMesh A \n";
-		for(int p = 0; p <= SIZE; p++) {
-			for(int q = 0; q <= SIZE; q++) {
+		for(int p = 1; p <= SIZE; p++) {
+			for(int q = 1; q <= SIZE; q++) {
 				if(isHuman(MeshA[p][q])) {
-					cout<<MeshA[p][q].age<<" | ";
+					cout<<MeshA[p][q].gender<<" H | ";
 				} else if (isZombie(MeshA[p][q])) {
-					cout<<MeshA[p][q].age<<" | ";
+					cout<<MeshA[p][q].age<<" Z | ";
 				}else{
-					cout<<"  | ";
+					cout<<"    | ";
 				}
 			}
 			cout<<"\n";
