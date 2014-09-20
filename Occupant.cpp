@@ -7,10 +7,12 @@ class Occupant{
 	public:
 		double probabilityOfMovement;
 		char type;
+		int age;
 
 		Occupant() {
 			probabilityOfMovement = 0.0;	
 			type = 'O';
+			age = 0;
 		}
 };
 
@@ -19,13 +21,17 @@ class Human: public Occupant{
 		Human(){
 			probabilityOfMovement = 0.1;
 			type = 'H';
+			 age = 0;
 		}
 };
+
+
 class Zombie: public Occupant{
 	public :
 		Zombie(){
 			probabilityOfMovement = 0.075;
 			type = 'Z';
+			 age = 0;
 		}
 };
 

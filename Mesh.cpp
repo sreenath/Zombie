@@ -3,25 +3,149 @@
 #include <omp.h>
 #include <unistd.h>
 #include "Occupant.cpp"
+#include <math.h>
 using namespace std;
 
-#define STEPS	100
-#define SIZE 	100
+#define STEPS	10
+#define SIZE 	10
 #define DEATH 0
+#define BIRTHPC 0.0000358
+
 
 bool isEmpty(Occupant o) {
-	if (o.type == 'O') {
-		return true;
-		} 
-		return false;
+        if (o.type == 'O') {
+                return true;
+                }
+                return false;
 }
 
 bool isHuman(Occupant o) {
-	if (o.type == 'H') {
-		return true;
-		} 
-		return false;
+        if (o.type == 'H') {
+                return true;
+                }
+                return false;
 }
+
+bool isZombie(Occupant o) {
+        if (o.type == 'Z') {
+                return true;
+                }
+                return false;
+}
+
+
+int getHumanPop(Occupant **Mesh){
+
+	int humanPop = 0;
+         for (int i = 1; i <= SIZE; i++) {
+                        for (int j = 1; j <= SIZE; j++) {
+				if (isHuman(Mesh[i][j]) ) {
+					humanPop++;	
+				}
+				
+			}
+	}
+	return humanPop;
+}
+
+
+int getZombiePop(Occupant **Mesh){
+
+	int zombiePop = 0;
+         for (int i = 1; i <= SIZE; i++) {
+                        for (int j = 1; j <= SIZE; j++) {
+				if (isZombie(Mesh[i][j]) ) {
+					zombiePop++;	
+				}
+				
+			}
+	}
+	return zombiePop;
+}
+
+
+void birthOpr(Occupant){
+
+}
+
+
+double getBirthRate(Occupant ** Mesh){
+        double delta = getHumanPop(Mesh)/(SIZE*SIZE - getZombiePop(Mesh));
+        double birthRate = BIRTHPC/(1-pow(1-delta,4))*4;
+        return birthRate;
+}
+
+Occupant ** placeBaby(int i1,int j1,int i2, int j2,Occupant ** Mesh){
+
+	Human baby;
+
+	if (i1 == i2){
+		if (isEmpty(Mesh[i1-1][j1])){
+			
+			Mesh[i1-1][j1] = baby;
+		}
+		else if (isEmpty(Mesh[i1-1][j2])){
+			
+			Mesh[i1-1][j2] = baby;
+		}
+		else if (isEmpty(Mesh[i1+1][j1])){
+			
+			Mesh[i1+1][j1] = baby;
+		}
+		else if (isEmpty(Mesh[i1+1][j2])){
+			
+			Mesh[i1+1][j2] = baby;
+			
+		}
+
+		else if (isEmpty(Mesh[i1][min(j1,j2)-1])){
+			
+			Mesh[i1][min(j1,j2)-1] = baby;
+		}
+
+		else if (isEmpty(Mesh[i1][max(j1,j2)+1])){
+			
+			Mesh[i1][max(j1,j2)+1]= baby;
+		}
+
+	}
+	else if (j1==j2){
+		if (isEmpty(Mesh[i1][j1-1])){
+			Mesh[i1][j1-1] = baby;
+		}
+
+		else if (isEmpty(Mesh[i2][j1-1])){
+			
+			Mesh[i2][j1-1] = baby;
+		}
+
+
+
+		else if (isEmpty(Mesh[i1][j1+1])){
+			
+			Mesh[i1][j1+1] = baby;
+		}
+
+		else if (isEmpty(Mesh[i2][j1+1])){
+			
+			Mesh[i2][j1+1] = baby;
+		}
+
+		else if (isEmpty(Mesh[min(i1,i2)-1][j1])){
+			
+			Mesh[min(i1,i2)-1][j1]= baby;
+		}
+
+		else if (isEmpty(Mesh[max(i1,i2)+1][j1])){
+			
+			Mesh[max(i1,i2)+1][j1]= baby;
+		}
+
+	}
+
+	return Mesh;
+}
+
 
 
 #if defined(_OPENMP)
@@ -146,7 +270,7 @@ int main(int argc, char **argv) {
 
 	for (int n = 0; n < STEPS; n++) {
 		#if defined(_OPENMP)
-		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
+		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n, cout)
 		#endif
 	
 		for (int i = 1; i <= SIZE; i++) {
@@ -154,6 +278,7 @@ int main(int argc, char **argv) {
 			for (int j = 1; j <= SIZE; j++) {
 				if (!isEmpty(MeshA[i][j])) { 
 					double move = drand48();
+					MeshA[i][j].age++ ;
 					if (move < 1.0*MeshA[i][j].probabilityOfMovement && isEmpty(MeshB[i-1][j]) && isEmpty(MeshA[i-1][j])) {
 						MeshB[i-1][j] = MeshA[i][j];
 					} else if (move < 2.0*MeshA[i][j].probabilityOfMovement && isEmpty(MeshB[i+1][j]) && isEmpty(MeshA[i+1][j])) {
@@ -177,13 +302,63 @@ int main(int argc, char **argv) {
 		swap(MeshA, MeshB);
 		print(MeshA, n+1);	
 
-/*
+
 		//Birth
 		for (int i = 1; i <= SIZE; i++) {
 			lock(i, locks, 2);
 			for (int j = 1; j <= SIZE; j++) {
-				
-*/
+				if (isHuman(MeshA[i][j])){
+					if (isHuman(MeshA[i][j-1])){
+						double birth = drand48();
+						if (birth <= 1.0*getBirthRate(MeshA)){
+							placeBaby(i,j,i,j-1,MeshA);
+							MeshB[i][j]= MeshA[i][j];
+							Occupant temp;
+							MeshA[i][j] = temp;	
+							continue;
+						}						
+					}
+					else if (isHuman(MeshA[i][j+1])){
+						double birth = drand48();
+						if (birth <= 1.0*getBirthRate(MeshA)){
+							placeBaby(i,j,i,j+1,MeshA);
+							MeshB[i][j]= MeshA[i][j];
+							Occupant temp;
+							MeshA[i][j] = temp;	
+							continue;
+						}			
+					}
+
+					else if (isHuman(MeshA[i-1][j])){
+						double birth = drand48();
+						if (birth <= 1.0*getBirthRate(MeshA)){
+							placeBaby(i,j,i-1,j,MeshA);
+							MeshB[i][j]= MeshA[i][j];
+							Occupant temp;
+							MeshA[i][j] = temp;	
+							continue;
+						}			
+					}
+
+					else if (isHuman(MeshA[i+1][j])){
+						double birth = drand48();
+						if (birth <= 1.0*getBirthRate(MeshA)){
+							placeBaby(i,j,i+1,j,MeshA);
+							MeshB[i][j]= MeshA[i][j];
+							Occupant temp;
+							MeshA[i][j] = temp;	
+							continue;
+						}			
+					}
+
+
+
+				}		
+			}
+			unlock(i, locks, 2);
+		}		
+
+
 		// Death 
 		for (int i = 1; i <= SIZE; i++) {
 			for (int j = 1; j <= SIZE; j++) {
@@ -195,15 +370,14 @@ int main(int argc, char **argv) {
 			}
 		}
 
-		print(MeshA, n+1);
-/*
+
 		cout<< "\n\nMesh A \n";
 		for(int p = 0; p <= SIZE; p++) {
 			for(int q = 0; q <= SIZE; q++) {
-				if(MeshA[p][q].probabilityOfMovement == 0.1 ) {
-					cout<<"H | ";
-				} else if (MeshA[p][q].probabilityOfMovement == 0.075) {
-					cout<<"Z | ";
+				if(isHuman(MeshA[p][q])) {
+					cout<<MeshA[p][q].age<<" | ";
+				} else if (isZombie(MeshA[p][q])) {
+					cout<<MeshA[p][q].age<<" | ";
 				}else{
 					cout<<"  | ";
 				}
@@ -211,7 +385,7 @@ int main(int argc, char **argv) {
 			cout<<"\n";
 		}
 		cout<<"\n\n\n\n\n\n\n\n\n";
-*/
+
 	}
 }
 
