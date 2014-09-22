@@ -25,10 +25,10 @@ class Human: public Occupant{
 			type = 'H';
 			age = 0;
 		}
-		Human(char c) {
+		Human(char c, int a) {
 			probabilityOfMovement = 0.1;
 			type = 'H';
-			age = 0;
+			age = a;
 			gender = c;
 		}
 };
