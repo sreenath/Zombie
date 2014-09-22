@@ -19,14 +19,21 @@ bool isEmpty(Occupant o) {
                 return false;
 }
 
-bool isHuman(Occupant o) {
-        if (o.type == 'H' && o.age < 16060 && o.age > 5475) {
+bool isReproducible(Occupant o) {
+        if (o.type == 'H' && ((o.gender == 'F' && o.age < 16060 && o.age > 5475) || (o.gender == 'M' && o.age > 5475))) {
                 return true;
                 }
                 return false;
 }
 
-bool isHumanNew(Occupant o) {
+bool isExposed(Occupant o) {
+        if (o.type == 'E') {
+                return true;
+                }
+                return false;
+}
+
+bool isHuman(Occupant o) {
         if (o.type == 'H') {
                 return true;
                 }
@@ -42,21 +49,62 @@ bool isZombie(Occupant o) {
 }
 
 bool isOppositeGender(Occupant h, char gender) {
-	if(h.gender == gender && h.age < 16060 && h.age > 5475) {
+	if(h.gender == gender) {
 		return false;
 	}
 	return true;
 }
+
+void zombify(Occupant **MeshA){
+	for (int i = 1; i <= SIZE; i++) {
+		for (int j = 1; j <= SIZE; j++) {
+			if (isZombie(MeshA[i][j])){
+				if (isHuman(MeshA[i-1][j])	) {
+					if (drand48() < 0.7) {
+						MeshA[i-1][j].type = 'E';
+						MeshA[i-1][j].age = 0;
+					}
+				}
+				if (isHuman(MeshA[i+1][j])	) {
+					if (drand48() < 0.7) {
+						MeshA[i+1][j].type = 'E';
+						MeshA[i+1][j].age = 0;
+					}
+				}
+				if (isHuman(MeshA[i][j-1])	) {
+					if (drand48() < 0.7) {
+						MeshA[i][j-1].type = 'E';
+						MeshA[i][j-1].age = 0;
+					}
+				}
+				if (isHuman(MeshA[i][j+1])	) {
+					if (drand48() < 0.7) {
+						MeshA[i][j+1].type = 'E';
+						MeshA[i][j+1].age = 0;
+					}
+				}
+			} else if(isExposed(MeshA[i][j])) {
+					cout<<"Exposed Age is "<<MeshA[i][j].age<<"\n";
+					if(MeshA[i][j].age > 2) {		// Exposed to Zombie takes 3 days
+						Zombie z;
+						MeshA[i][j] = z;
+					} else {
+						MeshA[i][j].age++;
+					}
+			}
+		}
+	}
+}		
+				
 int getHumanPop(Occupant **Mesh){
 
 	int humanPop = 0;
-         for (int i = 1; i <= SIZE; i++) {
-                        for (int j = 1; j <= SIZE; j++) {
-				if (isHumanNew(Mesh[i][j]) ) {
-					humanPop++;	
-				}
-				
+  for (int i = 1; i <= SIZE; i++) {
+    for (int j = 1; j <= SIZE; j++) {
+			if (isHuman(Mesh[i][j]) ) {
+				humanPop++;	
 			}
+		}
 	}
 	return humanPop;
 }
@@ -218,17 +266,19 @@ Occupant **checkBoundary(Occupant **Mesh) {
 void print(Occupant **Mesh, int t) {
 	int humanPop = 0;
 	int zombiePop = 0;
+	int exposedPop = 0;
          for (int i = 1; i <= SIZE; i++) {
-                        for (int j = 1; j <= SIZE; j++) {
-				if (Mesh[i][j].probabilityOfMovement == 0.1 ) {
-					humanPop++;	
+           for (int j = 1; j <= SIZE; j++) {
+						if (isHuman(Mesh[i][j])) {
+							humanPop++;	
+						} else if (isZombie(Mesh[i][j])){
+								zombiePop++;
+						} else if (isExposed(Mesh[i][j])) {
+								exposedPop++;
+						}
+					}
 				}
-				else if (Mesh[i][j].probabilityOfMovement == 0.075 ){
-					zombiePop++;
-				}
-			}
-	}
-	cout<<t<<"\t"<<humanPop<<"\t"<<zombiePop<<std::endl;
+	cout<<t<<"\t"<<humanPop<<"\t"<<zombiePop<<"\t"<<exposedPop<<std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -244,7 +294,6 @@ int main(int argc, char **argv) {
 			//#zombies should be reduced
 			double randNum = drand48();
 			double ageDistribution = drand48();
-			cout<<"randNum is "<<randNum<<"\n";
 			if (randNum < 0.01) {
 				// Modification required to incorporate Male, Female & Zombie differentiation
 				if(getZombiePop(MeshA) < 2) {
@@ -327,15 +376,14 @@ cout<< "\n\nAFTER Moving  - Mesh A \n";
 		cout<<"\n\n\n\n\n\n\n\n\n";
 */
 		//Birth
-
 		#if defined(_OPENMP)
 		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
 		#endif
 		for (int i = 1; i <= SIZE; i++) {
 			lock(i, locks, 2);
 			for (int j = 1; j <= SIZE; j++) {
-				if (isHuman(MeshA[i][j])){
-					if (isHuman(MeshA[i][j-1]) && isOppositeGender(MeshA[i][j-1], MeshA[i][j].gender)){
+				if (isReproducible(MeshA[i][j])){
+					if (isReproducible(MeshA[i][j-1]) && isOppositeGender(MeshA[i][j-1], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
 							placeBaby(i,j,i,j-1,MeshA, MeshB);
@@ -345,7 +393,7 @@ cout<< "\n\nAFTER Moving  - Mesh A \n";
 							continue;
 						}						
 					}
-					else if (isHuman(MeshA[i][j+1]) && isOppositeGender(MeshA[i][j+1], MeshA[i][j].gender)){
+					else if (isReproducible(MeshA[i][j+1]) && isOppositeGender(MeshA[i][j+1], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
 							placeBaby(i,j,i,j+1,MeshA, MeshB);
@@ -356,7 +404,7 @@ cout<< "\n\nAFTER Moving  - Mesh A \n";
 						}			
 					}
 
-					else if (isHuman(MeshA[i-1][j]) && isOppositeGender(MeshA[i - 1][j], MeshA[i][j].gender)){
+					else if (isReproducible(MeshA[i-1][j]) && isOppositeGender(MeshA[i - 1][j], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
 							placeBaby(i,j,i-1,j,MeshA, MeshB);
@@ -367,7 +415,7 @@ cout<< "\n\nAFTER Moving  - Mesh A \n";
 						}			
 					}
 
-					else if (isHuman(MeshA[i+1][j]) && isOppositeGender(MeshA[i + 1][j], MeshA[i][j].gender)){
+					else if (isReproducible(MeshA[i+1][j]) && isOppositeGender(MeshA[i + 1][j], MeshA[i][j].gender)){
 						double birth = drand48();
 						if (birth <= 1.0*getBirthRate(MeshA)){
 							placeBaby(i,j,i+1,j,MeshA, MeshB);
@@ -403,6 +451,8 @@ cout<< "\n\nAFTER Moving  - Mesh A \n";
 			}
 		}
 
+	// Zombification
+	zombify(MeshA);
 /*
 		cout<< "\n\nMesh A \n";
 		for(int p = 1; p <= SIZE; p++) {
