@@ -326,7 +326,7 @@ cout<< "\n\nAFTER Moving  - Mesh A \n";
 		//Birth
 
 		#if defined(_OPENMP)
-		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
+		#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n, cout)
 		#endif
 		for (int i = 1; i <= SIZE; i++) {
 			lock(i, locks, 2);

@@ -20,7 +20,6 @@ class Occupant{
 
 class Human: public Occupant{
 	public :
-		char gender;
 		Human(){
 			probabilityOfMovement = 0.1;
 			type = 'H';
