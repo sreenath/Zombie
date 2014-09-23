@@ -3,46 +3,49 @@
 using namespace std;
 
 class Occupant{
-   
-	public:
-		double probabilityOfMovement;
-		char type;
-		int age;
-		int exposedPeriod;
-		char gender;
-
-		Occupant() {
-			probabilityOfMovement = 0.0;	
-			type = 'O';
-			age = 0;
-			gender = ' ';
-		}
+    
+    public:
+        double probabilityOfMovement;
+        char type;
+        int age;
+        int exposedPeriod;
+        char gender;
+    
+        Occupant() {
+            probabilityOfMovement = 0.0;
+            type = 'O';
+            age = 0;
+            gender = ' ';
+        }
+        Occupant(char ty) {
+        
+            gender = ' ';
+            age = 0;
+            if (ty == 'H')
+            {
+                probabilityOfMovement = 0.1;
+                type = 'H';
+            }
+            else
+            if (ty == 'Z')
+            {
+                probabilityOfMovement = 0.075;
+                type = 'Z';
+            }else
+                if (ty == 'E')
+                {
+                    probabilityOfMovement = 0.0;
+                    type = 'E';
+                }
+                else
+                {
+                    probabilityOfMovement = 0.0;
+                    type = 'O';
+                }
+        
+        }
 };
 
-class Human: public Occupant{
-	public :
-		Human(){
-			probabilityOfMovement = 0.1;
-			type = 'H';
-			age = 0;
-		}
-		Human(char c, int a) {
-			probabilityOfMovement = 0.1;
-			type = 'H';
-			age = a;
-			gender = c;
-		}
-};
-
-
-class Zombie: public Occupant{
-	public :
-		Zombie(){
-			probabilityOfMovement = 0.075;
-			type = 'Z';
-			 age = 0;
-		}
-};
 
 /**int main(){	
  Occupant oc;
@@ -54,6 +57,5 @@ class Zombie: public Occupant{
  cout << h.probabilityOfMovement<<endl;
  cout << z.probabilityOfMovement<<endl;
  return 0;
-}**/
-
+ }**/
 
