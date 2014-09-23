@@ -8,6 +8,7 @@ class Occupant{
 		double probabilityOfMovement;
 		char type;
 		int age;
+		int exposedPeriod;
 		char gender;
 
 		Occupant() {
