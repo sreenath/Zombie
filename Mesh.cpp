@@ -3,11 +3,12 @@
 #include <omp.h>
 #include <unistd.h>
 #include "Occupant.cpp"
+#include "mt.h"
 #include <math.h>
 using namespace std;
 
 #define STEPS	500
-#define SIZE 	486
+#define SIZE 	100
 #define DEATHPC 0.0002175
 #define BIRTHPC 0.0000358
 #define ZOMBIEAGE 28
@@ -56,33 +57,37 @@ bool isOppositeGender(Occupant h, char gender) {
     return true;
 }
 
-void zombify(Occupant **MeshA){
+void zombify(Occupant **MeshA, MTRand* mt){
 #if defined(_OPENMP)
-#pragma omp parallel for default(none) shared(MeshA)
+#pragma omp parallel for default(none) shared(MeshA, mt)
 #endif
     for (int i = 1; i <= SIZE; i++) {
         for (int j = 1; j <= SIZE; j++) {
             if (isZombie(MeshA[i][j])){
                 if (isHuman(MeshA[i-1][j])	) {
-                    if (drand48() < ZOMBIEATTACK) {
+                    //if (drand48() < ZOMBIEATTACK) {
+                    if (mt[omp_get_thread_num()].operator()() < ZOMBIEATTACK) {
                         MeshA[i-1][j].type = 'E';
                         MeshA[i-1][j].exposedPeriod = 0;
                     }
                 }
                 if (isHuman(MeshA[i+1][j])	) {
-                    if (drand48() < ZOMBIEATTACK) {
+                    //if (drand48() < ZOMBIEATTACK) {
+                    if (mt[omp_get_thread_num()].operator()() < ZOMBIEATTACK) {
                         MeshA[i+1][j].type = 'E';
                         MeshA[i+1][j].exposedPeriod = 0;
                     }
                 }
                 if (isHuman(MeshA[i][j-1])	) {
-                    if (drand48() < ZOMBIEATTACK) {
+                    //if (drand48() < ZOMBIEATTACK) {
+                    if (mt[omp_get_thread_num()].operator()() < ZOMBIEATTACK) {
                         MeshA[i][j-1].type = 'E';
                         MeshA[i][j-1].exposedPeriod = 0;
                     }
                 }
                 if (isHuman(MeshA[i][j+1])	) {
-                    if (drand48() < ZOMBIEATTACK) {
+                    //if (drand48() < ZOMBIEATTACK) {
+                    if (mt[omp_get_thread_num()].operator()() < ZOMBIEATTACK) {
                         MeshA[i][j+1].type = 'E';
                         MeshA[i][j+1].exposedPeriod = 0;
                     }
@@ -130,8 +135,9 @@ double getBirthRate(Occupant ** Mesh){
     return birthRate;
 }
 
-void placeBaby(int i1,int j1,int i2, int j2,Occupant ** Mesh, Occupant ** MeshB){
-    double g = drand48();
+void placeBaby(int i1,int j1,int i2, int j2,Occupant ** Mesh, Occupant ** MeshB, MTRand *mt){
+    //double g = drand48();
+    double g = mt[omp_get_thread_num()].operator()();
     char gender;
     if (g < 1.0*0.5) {
         gender = 'M';
@@ -283,7 +289,8 @@ void print(Occupant **Mesh, int t) {
 }
 
 int main(int argc, char **argv) {
-    srand48(getpid());
+    //srand48(getpid());
+    MTRand mt[64];
     int random;
     bool *locks = new bool[SIZE + 2];
     for (int i = 0; i < SIZE + 2; i++) locks[i] = false;
@@ -293,8 +300,10 @@ int main(int argc, char **argv) {
     for (int i = 1; i <= SIZE; i++) {
         for (int j = 1; j <= SIZE; j++) {
             //#zombies should be reduced
-            double randNum = drand48();
-            double ageDistribution = drand48();
+            //double randNum = drand48();
+            //double ageDistribution = drand48();
+            double randNum = mt[omp_get_thread_num()].operator()();
+            double ageDistribution = mt[omp_get_thread_num()].operator()();
             if (randNum < 0.01) {
                 // Modification required to incorporate Male, Female & Zombie differentiation
                 if(getZombiePop(MeshA) < 2) {
@@ -303,12 +312,15 @@ int main(int argc, char **argv) {
                 }
             } else {
                 if (ageDistribution < 0.182) {
-                    random = rand()%(5475 - 0 + 1) + 0;
+                			//random = rand()%(5475 - 0 + 1) + 0;
+                    random = (int) mt[omp_get_thread_num()].operator()()%(5475 - 0 + 1) + 0;
                 }
                 else if (ageDistribution < 0.61) {
-                    random = rand()%(16060 - 5475 + 1) + 5475;
+                    //random = rand()%(16060 - 5475 + 1) + 5475;
+                    		random = (int) mt[omp_get_thread_num()].operator()()%(16060 - 5475 + 1) + 5475;
                 } else {
-                    random = rand()%(36500 - 16060 + 1) + 16060;
+                    //random = rand()%(36500 - 16060 + 1) + 16060;
+                    random = (int) mt[omp_get_thread_num()].operator()()%(36500 - 16060 + 1) + 16060;
                 }
                 if(randNum < 0.05){
                     char gender = 'M';
@@ -334,14 +346,16 @@ int main(int argc, char **argv) {
     
     for (int n = 0; n < STEPS; n++) {
 #if defined(_OPENMP)
-#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
+#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n, mt)
 #endif
         
         for (int i = 1; i <= SIZE; i++) {
             lock(i, locks, 1);
             for (int j = 1; j <= SIZE; j++) {
                 if (!isEmpty(MeshA[i][j])) {
-                    double move = drand48();
+                    //double move = drand48();
+                    double move = mt[omp_get_thread_num()].operator()();
+            
                     MeshA[i][j].age++ ;
                     if (move < 1.0*MeshA[i][j].probabilityOfMovement && isEmpty(MeshB[i-1][j]) && isEmpty(MeshA[i-1][j])) {
                         MeshB[i-1][j] = MeshA[i][j];
@@ -365,6 +379,7 @@ int main(int argc, char **argv) {
         MeshB = checkBoundary(MeshB);
         swap(MeshA, MeshB);
         print(MeshA, n+1);
+        
         /*
          cout<< "\n\nAFTER Moving  - Mesh A \n";
          for(int p = 1; p <= SIZE; p++) {
@@ -383,16 +398,17 @@ int main(int argc, char **argv) {
          */
         //Birth
 #if defined(_OPENMP)
-#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n)
+#pragma omp parallel for default(none) shared(MeshA, MeshB, locks, n, mt)
 #endif
         for (int i = 1; i <= SIZE; i++) {
             lock(i, locks, 2);
             for (int j = 1; j <= SIZE; j++) {
                 if (isReproducible(MeshA[i][j])){
                     if (isReproducible(MeshA[i][j-1]) && isOppositeGender(MeshA[i][j-1], MeshA[i][j].gender)){
-                        double birth = drand48();
+                        //double birth = drand48();
+                        double birth = mt[omp_get_thread_num()].operator()();
                         if (birth <= 1.0*getBirthRate(MeshA)){
-                            placeBaby(i,j,i,j-1,MeshA, MeshB);
+                            placeBaby(i,j,i,j-1,MeshA, MeshB, mt);
                             MeshB[i][j]= MeshA[i][j];
                             Occupant temp;
                             MeshA[i][j] = temp;
@@ -400,9 +416,10 @@ int main(int argc, char **argv) {
                         }						
                     }
                     else if (isReproducible(MeshA[i][j+1]) && isOppositeGender(MeshA[i][j+1], MeshA[i][j].gender)){
-                        double birth = drand48();
+                        //double birth = drand48();
+                        double birth = mt[omp_get_thread_num()].operator()();
                         if (birth <= 1.0*getBirthRate(MeshA)){
-                            placeBaby(i,j,i,j+1,MeshA, MeshB);
+                            placeBaby(i,j,i,j+1,MeshA, MeshB, mt);
                             MeshB[i][j]= MeshA[i][j];
                             Occupant temp;
                             MeshA[i][j] = temp;	
@@ -411,9 +428,10 @@ int main(int argc, char **argv) {
                     }
                     
                     else if (isReproducible(MeshA[i-1][j]) && isOppositeGender(MeshA[i - 1][j], MeshA[i][j].gender)){
-                        double birth = drand48();
+                        //double birth = drand48();
+                        double birth = mt[omp_get_thread_num()].operator()();
                         if (birth <= 1.0*getBirthRate(MeshA)){
-                            placeBaby(i,j,i-1,j,MeshA, MeshB);
+                            placeBaby(i,j,i-1,j,MeshA, MeshB, mt);
                             MeshB[i][j]= MeshA[i][j];
                             Occupant temp;
                             MeshA[i][j] = temp;	
@@ -422,9 +440,10 @@ int main(int argc, char **argv) {
                     }
                     
                     else if (isReproducible(MeshA[i+1][j]) && isOppositeGender(MeshA[i + 1][j], MeshA[i][j].gender)){
-                        double birth = drand48();
+                        //double birth = drand48();
+                        double birth = mt[omp_get_thread_num()].operator()();
                         if (birth <= 1.0*getBirthRate(MeshA)){
-                            placeBaby(i,j,i+1,j,MeshA, MeshB);
+                            placeBaby(i,j,i+1,j,MeshA, MeshB, mt);
                             MeshB[i][j]= MeshA[i][j];
                             Occupant temp;
                             MeshA[i][j] = temp;	
@@ -449,7 +468,8 @@ int main(int argc, char **argv) {
         // Death 
         for (int i = 1; i <= SIZE; i++) {
             for (int j = 1; j <= SIZE; j++) {
-                double die = drand48();
+                //double die = drand48();
+                double die = mt[omp_get_thread_num()].operator()();
                 if (isHuman(MeshA[i][j]) && die < 1.0*DEATHPC) {
                     Occupant temp;
                     MeshA[i][j] = temp;
@@ -461,7 +481,7 @@ int main(int argc, char **argv) {
         }
         
         // Zombification
-        zombify(MeshA);
+        zombify(MeshA, mt);
         /*
          cout<< "\n\nMesh A \n";
          for(int p = 1; p <= SIZE; p++) {
